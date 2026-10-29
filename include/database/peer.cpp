@@ -93,6 +93,7 @@ void peer::mysql_select_all(bool by_user_id)
     this->created_at = this->mysql_select<std::time_t>("created_at", "UNIX_TIMESTAMP");
     this->gems       = this->mysql_select<long long>("gems");
     this->wl_storage = this->mysql_select<signed>("wl_storage");
+    this->role       = static_cast<u_char>(this->mysql_select<signed>("role"));
     this->level[0]   = this->mysql_select<signed>("level");
     this->level[1]   = this->mysql_select<signed>("xp");
     auto inventory   = this->mysql_select<::blob>("inventory");
@@ -138,16 +139,18 @@ void peer::mysql_update_all()
 {
     if (this->growid.empty()) return;
 
-    ::hStmt hStmt{ "UPDATE peer SET inventory = ?, gems = ?, level = ?, xp = ?, wl_storage = ? WHERE growid = ?" };
+    ::hStmt hStmt{ "UPDATE peer SET inventory = ?, gems = ?, level = ?, xp = ?, wl_storage = ?, role = ? WHERE growid = ?" };
     const ::blob inventory = this->serialize_inventory();
     const int level_value = this->level[0], xp_value = this->level[1];
+    const int role_value = this->role;
 
-    MYSQL_BIND params[6] = {
+    MYSQL_BIND params[7] = {
         make_bind_in(inventory),
         make_bind_in(this->gems),
         make_bind_in(level_value),
         make_bind_in(xp_value),
         make_bind_in(this->wl_storage),
+        make_bind_in(role_value),
         make_bind_in(this->growid)
     };
     hStmt.bind_param(params);
@@ -206,16 +209,23 @@ u_short peer::emplace(::slot slot)
     if (auto it = std::ranges::find(this->slots, slot.id, &::slot::id); it != this->slots.end()) 
     {
         const u_short excess = std::max(0, (it->count + slot.count) - 200);
-        it->count = std::min(it->count + slot.count, 200);
+        it->count = std::clamp<short>(it->count + slot.count, 0, 200);
         if (it->count == 0)
         {
             const ::item &item = id_to_item(it->id);
             if (item.cloth_type != clothing::NONE) this->clothing[item.cloth_type] = 0;
+            this->slots.erase(it);
         }
         return excess;
     }
-    else this->slots.emplace_back(std::move(slot)); // @note no such item in inventory, so we create a new entry.
-    return 0;
+    else if (slot.count > 0 && static_cast<int>(this->slots.size()) < this->slot_size)
+    {
+        const u_short excess = std::max(0, slot.count - 200);
+        slot.count = std::min<short>(slot.count, 200);
+        this->slots.emplace_back(std::move(slot));
+        return excess;
+    }
+    return static_cast<u_short>(slot.count > 0 ? slot.count : 0);
 }
 
 void peer::add_xp(ENetEvent &event, u_short value) 

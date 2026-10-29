@@ -15,6 +15,11 @@ void item_activate_object(ENetEvent& event, ::gamePacket gamePacket)
     auto object = std::ranges::find(world->objects, gamePacket.id, &::object::uid);
     if (object == world->objects.end()) return; // @note already picked up (the game can ask twice)
 
+    // Distance check: prevent vacuum / cheat pickups across map (max ~5 tiles / 160px)
+    const float dx = pPeer->pos.x - object->pos.x;
+    const float dy = pPeer->pos.y - object->pos.y;
+    if ((dx * dx + dy * dy) > (160.0f * 160.0f)) return;
+
     u_short left = 0;
     if (object->id != 112/*gem*/)
     {

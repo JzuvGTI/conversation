@@ -6,7 +6,9 @@
 
 void action::drop(ENetEvent& event, const std::string& header)
 {
-    const std::string &itemID = readch(header, '|')[4];
+    const std::vector<std::string> pipes = readch(header, '|');
+    if (pipes.size() < 5) return;
+    const std::string &itemID = pipes[4];
     
     const ::item &item = id_to_item(atoi(itemID.c_str()));
     

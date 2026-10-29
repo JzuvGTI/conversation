@@ -14,6 +14,7 @@
 
 #include <csignal>
 #include <thread>
+#include <chrono>
 
 namespace
 {
@@ -52,10 +53,32 @@ int main()
     check_for_holiday();
 
     ENetEvent event{};
+    auto last_autosave = std::chrono::steady_clock::now();
     while (!gSignal)
+    {
         while (enet_host_service(host, &event, 1000/*ms*/) > 0)
+        {
             if (const auto i = eventType_pool.find(event.type); i != eventType_pool.end())
                 i->second(event);
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::seconds>(now - last_autosave).count() >= 120)
+        {
+            last_autosave = now;
+            for (auto &w : worlds) w.save();
+            peers("", PeerSearch::EVERYONE, [](ENetPeer *p) {
+                if (p && p->data) static_cast<::peer*>(p->data)->save();
+            });
+            print("Auto-saved active worlds and player data.");
+        }
+    }
+
+    print("Shutting down gurotopia... saving all active worlds and players.");
+    for (auto &w : worlds) w.save();
+    peers("", PeerSearch::EVERYONE, [](ENetPeer *p) {
+        if (p && p->data) static_cast<::peer*>(p->data)->save();
+    });
 
     safe_disconnect_peers(gSignal);
     enet_host_destroy(host);

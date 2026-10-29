@@ -91,6 +91,7 @@ public:
     T    mysql_select(const std::string &column, const std::string &arg = "", bool by_user_id = false); // @note by_user_id: WHERE uid instead of WHERE growid
     void mysql_select_all(bool by_user_id = false);
     void mysql_update_all();
+    void save() { this->mysql_update_all(); }
 
     int user_id{}; // @note unqiue user id.
     std::string growid{""}, password{""};

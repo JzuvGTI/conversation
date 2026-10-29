@@ -313,8 +313,9 @@ world::world(const std::string &name) : name(name)/*DEFAULT*/
         generate_world(*this);
     }
 }
-world::~world()
+void world::save()
 {
+    if (this->name.empty()) return;
     this->mysql_update("owner", this->owner);
     {
         ::blob blob;
@@ -367,6 +368,11 @@ world::~world()
         }
         this->mysql_update("objects", blob.data());
     }
+}
+
+world::~world()
+{
+    this->save();
 }
 
 std::vector<world> worlds;

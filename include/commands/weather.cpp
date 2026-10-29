@@ -76,6 +76,17 @@ int get_weather_id(u_int item_id)
 
 void weather(ENetEvent& event, const std::string_view text)
 {
+    ::peer *pPeer = static_cast<::peer*>(event.peer->data);
+    auto world = std::ranges::find(worlds, pPeer->recent_worlds.back(), &::world::name);
+    bool is_owner = (world != worlds.end() && world->owner == pPeer->user_id);
+
+    if (pPeer->role < MODERATOR && !is_owner)
+    {
+        send_action(event.peer, "log", "msg|`4You need to be a Moderator/Developer or World Owner to use /weather.");
+        return;
+    }
+
+    if (text.size() <= strlen("weather ")) return;
     const std::string id{ text.substr(strlen("weather ")) };
 
     send_varlist(event.peer, {

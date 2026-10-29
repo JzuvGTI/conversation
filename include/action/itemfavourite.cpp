@@ -6,7 +6,9 @@
 
 void action::itemfavourite(ENetEvent& event, const std::string& header)
 {
-    std::string id{readch(header, '|')[4]};
+    const std::vector<std::string> pipes = readch(header, '|');
+    if (pipes.size() < 5) return;
+    std::string id = pipes[4];
     if (id.empty()) return;
 
     ::peer *pPeer = static_cast<::peer*>(event.peer->data);

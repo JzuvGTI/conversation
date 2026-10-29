@@ -47,6 +47,11 @@ void data_modify(std::vector<u_char> &data, const u_int &pos, const T &value) no
 
 void decode_items_dat()
 {
+    if (!std::filesystem::exists("items.dat"))
+    {
+        print("WARNING: 'items.dat' not found! Please place items.dat in the server root folder.");
+        return;
+    }
     const u_int size = std::filesystem::file_size("items.dat");
     im_data = compress_state(::gamePacket{ .type = 0x10,/*PACKET_SEND_ITEM_DATABASE_DATA*/ .state = (int)gamePacketState::EXTENDED, .size = size }).data();
     

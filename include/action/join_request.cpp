@@ -52,10 +52,16 @@ void action::join_request(ENetEvent& event, const std::string& header, const std
         } // @note delete name, first
         on::EmoticonDataChanged(event);
 
-        if (pPeer->user_id == world.owner) 
+        if (pPeer->role >= DEVELOPER)
+            pPeer->display_growid = std::format("`6@{}``", pPeer->growid);
+        else if (pPeer->role >= MODERATOR)
+            pPeer->display_growid = std::format("`#@{}``", pPeer->growid);
+        else if (pPeer->user_id == world.owner) 
             pPeer->display_growid = std::format("`2{}``", pPeer->growid);
         else if (std::ranges::find(world.access, pPeer->user_id) != world.access.end()) 
             pPeer->display_growid = std::format("`c{}``", pPeer->growid);
+        else
+            pPeer->display_growid = std::format("`w{}``", pPeer->growid);
 
         pPeer->rest_pos = world.spawn;
 

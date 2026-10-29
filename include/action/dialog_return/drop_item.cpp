@@ -11,11 +11,12 @@ void drop_item(ENetEvent& event, const ::hPipe &hPipe)
 
     const short itemID = atoi(hPipe["itemID"].c_str());
     short count = atoi(hPipe["count"].c_str());
+    if (count <= 0) return;
 
-    for (const ::slot &slot : pPeer->slots)
-        if (slot.id == itemID)
-            if (count > slot.count) count = slot.count;
-            else if (count < 0) count = 0;
+    auto it = std::ranges::find(pPeer->slots, itemID, &::slot::id);
+    if (it == pPeer->slots.end() || it->count <= 0) return;
+
+    if (count > it->count) count = it->count;
 
     modify_item_inventory(event, ::slot(itemID, -count));
 

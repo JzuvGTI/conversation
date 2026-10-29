@@ -23,10 +23,17 @@ void tile_change(ENetEvent& event, ::gamePacket gamePacket)
     ::peer *pPeer = static_cast<::peer*>(event.peer->data);
     try
     {
+        if (pPeer->recent_worlds.empty()) return;
         auto world = std::ranges::find(worlds, pPeer->recent_worlds.back(), &::world::name);
         if (world == worlds.end()) return;
 
-        ::block &block = world->blocks[cord(gamePacket.punch.x, gamePacket.punch.y)];
+        if (gamePacket.punch.x < 0 || gamePacket.punch.x >= 100 || 
+            gamePacket.punch.y < 0 || gamePacket.punch.y >= 60) return;
+
+        const int block_idx = cord(gamePacket.punch.x, gamePacket.punch.y);
+        if (block_idx < 0 || block_idx >= static_cast<int>(world->blocks.size())) return;
+
+        ::block &block = world->blocks[block_idx];
 
         const ::item &item = id_to_item((gamePacket.id != 32 && gamePacket.id != 18) ? gamePacket.id : (block.fg != 0) ? block.fg : block.bg);
         if (item.id == 0) return;

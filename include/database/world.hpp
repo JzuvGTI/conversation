@@ -134,6 +134,8 @@ public:
     world(const std::string &name = "");/*DEFAULT*/
     ~world();
 
+    void save();
+
     bool exists(const std::string& name);
 
     template<typename T>
